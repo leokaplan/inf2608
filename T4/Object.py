@@ -20,11 +20,10 @@ class Transform:
         self.localx = quat.rotate(self.localx)
         self.localy = quat.rotate(self.localy)
         self.localz = quat.rotate(self.localz)
-        self.rotation *= quat
-        self.rotation_angle = self.rotation.angle
-        #print(self.localx)
+        #self.rotation *= quat
+        #self.rotation_angle = self.rotation.angle
 
-    def __init__(self,position=None,orientation=None,scale=None):
+    def __init__(self,position=None,rotation=None,scale=None):
         self.localx = (1,0,0)
         self.localy = (0,1,0)
         self.localz = (0,0,1)
@@ -34,10 +33,10 @@ class Transform:
             self.position = V3.zero()
         else:
             self.position = position
-        if orientation is None:
-            self.orientation = V3.zero()
+        if rotation is None:
+            self.rotation = V3.zero()
         else:
-            self.orientation = orientation
+            self.rotation = rotation
         if scale is None:
             self.scale = V3.one()
         else:
@@ -49,6 +48,8 @@ class Object:
         return None
     
     def update(self,dt):
+        for child in self.children:
+            child.update(dt) 
         return None
     def __init__(self,parent,transform=None):
         if transform == None:
@@ -57,36 +58,9 @@ class Object:
         else:
             self.transform = transform
             self.gtransform = transform
+        self.faces = []
         self.parent = parent
         self.children = []
-    def gldraw(self,w,h):
-        #glPushMatrix()
-        #glRotatef(self.gtransform.rotation.z,*((self.transform.rotation*-1).pure()))
-        #glRotatef(self.gtransform.rotation.y,*((self.transform.rotation*-1).pure()))
-        #glRotatef(self.gtransform.rotation.x,*((self.transform.rotation*-1).pure()))
-        glPushMatrix()
-        glTranslatef(*self.transform.position.pure())
-        #print(self.transform.rotation.angle)
-        #glMultMatrixf(self.transform.rotation.transformation_matrix)
-        glRotatef(self.transform.rotation_angle*57.3, *self.transform.localz)
-        #glRotatef(120,0,1,1)
-        #rotz = (-math.sin(self.transform.rotation.z), math.cos(self.transform.rotation.z), 0)
-        #glRotatef(self.transform.rotation.y, *rotz)
-        #roty = (self.transform.rotation.y*math.cos(self.transform.rotation.z), self.transform.rotation.y*math.sin(self.transform.rotation.z), 0)
-        #glRotatef(self.transform.rotation.x, *roty)
-        
-        glRotatef(self.transform.rotation_angle*57.3, *self.transform.localy)
-        glRotatef(self.transform.rotation_angle*57.3, *self.transform.localx)
-        #glRotatef(self.transform.orientation.z,1,1,1)
-        #glRotatef(self.transform.orientation.y/57,0,1,0)
-        #glRotatef(self.transform.orientation.x/57,1,0,0)
-        glBegin(GL_LINES)
-        for edge in self.edges:
-            for vertex in edge:
-                glVertex3fv(self.vertices[vertex].pure())
-        glEnd()
-        #glPopMatrix()
-        glPopMatrix()
 
 class Cube(Object):
     def __init__(self,parent,transform):
@@ -103,17 +77,68 @@ class Cube(Object):
         ]
         self.edges = [
             [0,1],
-            [0,2],
-            [0,3],
-            [5,1],
-            [5,7],
+            [1,5],
+            [5,0],
+            
+            [0,5],
             [5,3],
-            [6,2],
-            [6,7],
-            [6,3],
+            [3,0],
+
+            [2,4],
             [4,1],
+            [1,2],
+            
+            [2,1],
+            [1,0],
+            [0,2],
+
             [4,7],
+            [7,5],
+            [5,4],
+            
+            [4,5],
+            [5,1],
+            [1,4],
+
+            
+            [7,6],
+            [6,3],
+            [3,7],
+            
+            [7,3],
+            [3,5],
+            [5,7],
+
+            
+            [6,2],
+            [2,0],
+            [0,6],
+            
+            [6,0],
+            [0,3],
+            [3,6],
+            
+            [6,7],
+            [7,4],
+            [4,6],
+
+            [6,4],
             [4,2],
+            [2,6],
+        ]
+        self.faces = [
+            [[0,1,2],   [(0,1),(1,1),(1,0)]],
+            [[3,4,5],   [(0,1),(1,0),(0,0)]],
+            [[6,7,8],   [(0,1),(1,1),(1,0)]],
+            [[9,10,11], [(0,1),(1,0),(0,0)]],
+            [[12,13,14],[(0,1),(1,1),(1,0)]],
+            [[15,16,17],[(0,1),(1,0),(0,0)]],
+            [[18,19,20],[(0,1),(1,1),(1,0)]],
+            [[21,22,23],[(0,1),(1,0),(0,0)]],
+            [[24,25,26],[(0,1),(1,1),(1,0)]],
+            [[27,28,29],[(0,1),(1,0),(0,0)]],
+            [[30,31,32],[(0,1),(1,1),(1,0)]],
+            [[33,34,35],[(0,1),(1,0),(0,0)]],
         ]
 class Plane(Object):
     def __init__(self,parent,transform):
@@ -125,10 +150,17 @@ class Plane(Object):
             V3(0.5,0.5,0)
         ]
         self.edges = [
-            [0,1],
-            [0,2],
             [2,3],
-            [1,3],
+            [3,1],
+            [1,2],
+            
+            [2,1],
+            [1,0],
+            [0,2]
+        ]
+        self.faces = [
+            [[0,1,2],[(0,1),(1,1),(1,0)]],
+            [[3,4,5],[(0,1),(1,0),(0,0)]]
         ]
 
 class Coord(Object):
@@ -149,24 +181,6 @@ class Coord(Object):
 
 class Camera(Object):
     def start(self):
-        self.transform.position -= V3(0,0,5)
-        self.speed = V3.zero()
-
+        return None
     def update(self,dt):
-        self.speed = V3.zero()
-        spd = 1
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    self.speed += V3(1,0,0)*-spd
-                if event.key == pygame.K_RIGHT:
-                    self.speed += V3(1,0,0)*spd
-                if event.key == pygame.K_DOWN:
-                    self.speed += V3(0,1,0)*-spd
-                if event.key == pygame.K_UP:
-                    self.speed += V3(0,1,0)*spd
-        self.transform.position -= self.speed*dt
-        for event in pygame.event.get():
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_DOWN or event.key == pygame.K_UP:
-                    self.speed = V3.zero()
+        return None

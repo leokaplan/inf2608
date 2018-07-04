@@ -19,12 +19,25 @@ class Presenter:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(10,10)
         self.backend = gl()
+    def bind(self,scene):
+        self.scene = scene
+        scene.presenter = self
+    
+    def loadtexture(self,index,path):
+        textureSurface = pygame.image.load(path)
+        textureData = pygame.image.tostring(textureSurface, "RGBA", 1)
+        width = textureSurface.get_width()
+        height = textureSurface.get_height()
+        self.scene.textures.insert(index, {'data':textureData,'w':width,'h':height})
+        newindex = self.backend.loadtexture(index,self.scene.textures[index])
+        self.scene.indexmap.insert(index,newindex)
 
-    def show(self,scene):
-        scene.w = self.w
-        scene.h = self.h
-        scene.camera.start()
-        for o in scene.objects:
+
+    def show(self):
+        self.scene.w = self.w
+        self.scene.h = self.h
+        self.scene.camera.start()
+        for o in self.scene.objects:
             o.start()
         while True:
             self.clock.tick()
@@ -36,10 +49,10 @@ class Presenter:
             self.t = pygame.time.get_ticks()
             self.dt = (self.t - self.dto) / 1000.0
             self.dto = self.t
-            scene.camera.update(self.dt)
-            for o in scene.objects:
+            self.scene.camera.update(self.dt)
+            for o in self.scene.objects:
                 o.update(self.dt)
-            self.backend.draw(scene)
+            self.backend.draw(self.scene)
             pygame.display.flip()
             pygame.time.wait(1)
     
