@@ -1,34 +1,15 @@
-import pygame
-from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
-
-from V3 import V3
+from V3 import V3,V4
 import math
-from pyquaternion import Quaternion
+import numpy as np
 
-class Primitive():
-    Plane = 1
-    Cube = 2
-    Sphere = 3
+def edge(a,b,c):
+    return (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])
 
 class Transform:
-    def RotateAroundAxis(self,axis,vector,degrees):
-        return None
-    def Rotate(self,quat):
-        self.localx = quat.rotate(self.localx)
-        self.localy = quat.rotate(self.localy)
-        self.localz = quat.rotate(self.localz)
-        #self.rotation *= quat
-        #self.rotation_angle = self.rotation.angle
-
     def __init__(self,position=None,rotation=None,scale=None):
         self.localx = (1,0,0)
         self.localy = (0,1,0)
         self.localz = (0,0,1)
-        self.rotation = Quaternion()
-        self.rotation_angle = 0
         if position is None:
             self.position = V3.zero()
         else:
@@ -46,6 +27,14 @@ class Transform:
 class Object:
     def start(self):
         return None
+    
+    def intersect(self,orig,dest):
+        return np.inf
+        return NotImplemented
+    
+    def normal(self,intersect):
+        return V3(0,0,0)
+        return NotImplemented
     
     def update(self,dt):
         for child in self.children:
@@ -127,19 +116,24 @@ class Cube(Object):
             [2,6],
         ]
         self.faces = [
-            [[0,1,2],   [(0,1),(1,1),(1,0)]],
-            [[3,4,5],   [(0,1),(1,0),(0,0)]],
-            [[6,7,8],   [(0,1),(1,1),(1,0)]],
-            [[9,10,11], [(0,1),(1,0),(0,0)]],
-            [[12,13,14],[(0,1),(1,1),(1,0)]],
-            [[15,16,17],[(0,1),(1,0),(0,0)]],
-            [[18,19,20],[(0,1),(1,1),(1,0)]],
-            [[21,22,23],[(0,1),(1,0),(0,0)]],
-            [[24,25,26],[(0,1),(1,1),(1,0)]],
-            [[27,28,29],[(0,1),(1,0),(0,0)]],
-            [[30,31,32],[(0,1),(1,1),(1,0)]],
-            [[33,34,35],[(0,1),(1,0),(0,0)]],
+            [[0,1,2],   [(0,1),(1,1),(1,0)],[0,-1,0]],
+            [[3,4,5],   [(0,1),(1,0),(0,0)],[0,-1,0]],
+            [[6,7,8],   [(0,1),(1,1),(1,0)],[0,0,-1]],
+            [[9,10,11], [(0,1),(1,0),(0,0)],[0,0,-1]],
+            [[12,13,14],[(0,1),(1,1),(1,0)],[+1,0,0]],
+            [[15,16,17],[(0,1),(1,0),(0,0)],[+1,0,0]],
+            [[18,19,20],[(0,1),(1,1),(1,0)],[0,0,+1]],
+            [[21,22,23],[(0,1),(1,0),(0,0)],[0,0,+1]],
+            [[24,25,26],[(0,1),(1,1),(1,0)],[-1,0,0]],
+            [[27,28,29],[(0,1),(1,0),(0,0)],[-1,0,0]],
+            [[30,31,32],[(0,1),(1,1),(1,0)],[0,+1,0]],
+            [[33,34,35],[(0,1),(1,0),(0,0)],[0,+1,0]],
         ]
+    def intersect(self,orig,dest):
+        return 0
+    def normal(self,intersect):
+        return  V3(0,0,1)
+
 class Plane(Object):
     def __init__(self,parent,transform):
         super().__init__(parent,transform)
@@ -159,9 +153,23 @@ class Plane(Object):
             [0,2]
         ]
         self.faces = [
-            [[0,1,2],[(0,1),(1,1),(1,0)]],
-            [[3,4,5],[(0,1),(1,0),(0,0)]]
+            [[0,1,2],[(0,1),(1,1),(1,0)],[0,0,1]],
+            [[3,4,5],[(0,1),(1,0),(0,0)],[0,0,1]]
         ]
+    def intersect(self,orig,dest):
+        normal = V3(*self.faces[0][2])
+        orig = orig.normalize()
+        dest = orig.normalize()
+        denom = V3.dot(normal,dest)
+        if denom < 1e-6:
+            return np.inf
+        d = V3.dot(self.transform.position - orig, normal) / denom
+        if d < 0:
+            return np.inf
+        return d
+    def normal(self,intersect):
+        return  V3(*self.faces[0][2])
+
 
 class Coord(Object):
     def __init__(self,parent,transform):
@@ -184,3 +192,11 @@ class Camera(Object):
         return None
     def update(self,dt):
         return None
+
+class Light(Object):
+    def __init__(self,parent,transform,color,ambient_color):
+        super().__init__(parent,transform)
+        self.color = color
+        self.ambient = ambient_color
+        self.Kspecular = 1.
+

@@ -1,4 +1,4 @@
-from Object import Cube,Camera,Plane,Coord,Object
+from Object import Transform,Cube,Camera,Plane,Coord,Object,Light
 import pygame
 
 
@@ -10,8 +10,6 @@ class Scene:
         self.textures = []
         self.indexmap = []
         self.lights = []
-        #self.width = width
-        #self.height = height
     def createCube(self,transform=None,parent=None):
         if parent is None:
             obj = Cube(self,transform)
@@ -33,6 +31,16 @@ class Scene:
         obj = Object(self,transform)
         self.objects.append(obj)
         return obj
+    def createLight(self,pos,color,ambient_color):
+        light = Light(self,Transform(pos.HV3()),color,ambient_color)
+        self.lights.append(light)
+        self.presenter.createLight(
+                len(self.lights)-1,
+                light.transform.position,
+                color,
+                ambient_color
+        )
+
     def loadtexture(self,index,path):
         self.presenter.loadtexture(index,path)
 
